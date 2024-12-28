@@ -38,15 +38,15 @@ class Database:
         if not self.is_connection_alive():
             print("Database connection is not established.")
             return None
-        cursor = self.connection.cursor()
         try:
-            cursor.execute(query)
-            self.connection.commit()
-            if query.strip().upper().startswith("SELECT"):
-                return self.fetch_results(cursor)
-            return (
-                cursor.rowcount
-            )  # Return the number of affected rows for non-SELECT queries
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+                self.connection.commit()
+                if query.strip().upper().startswith("SELECT"):
+                    return self.fetch_results(cursor)
+                return (
+                    cursor.rowcount
+                )  # Return the number of affected rows for non-SELECT queries
         except Exception as e:
             print(f"Error executing query: {e}")
             return None

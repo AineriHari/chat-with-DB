@@ -1,25 +1,30 @@
-from utils import validate_input, handle_error
+from database import Database
+from model import LLM
+from typing import Dict
 
 
 class ChatBot:
-    def __init__(self, db, llm):
-        self.db = db
-        self.llm = llm
+    def __init__(self, database_config: Dict, api_key: str):
+        self.database = Database(**database_config)
+        self.llm = LLM(api_key, self.database)
 
-    def process_query(self, user_query):
-        if not validate_input(user_query):
-            return handle_error("Invalid input. Please enter a valid query.")
+    def process_query(self, user_query: str):
+        if not user_query.strip():
+            return f"Error: Invalid input. Please enter a valid query."
 
-        sql_query, clarification_needed = self.llm.convert_to_sql(user_query)
-        while clarification_needed:
-            clarification_question = sql_query
-            user_query = input(f"Bot: {clarification_question}\nYou: ")
-            if not validate_input(user_query):
-                return handle_error("Invalid input. Please enter a valid query.")
-            sql_query, clarification_needed = self.llm.convert_to_sql(user_query)
+        # process the query
+        response = self.llm.process_user_query(user_query)
 
-        results = self.db.execute_query(sql_query)
-        if results is None:
-            return handle_error("Error executing query.")
+        # Use LLM to make the results human-readable
+        response = self.model.generate_content(
+            f"Format the following results in a human-readable format:\n{response}",
+            stream=True,
+        )
 
-        return self.format_response(results)
+        result = ""
+        print("Bot: ")
+        for chunk in response:
+            result += chunk.text
+            print(result)
+
+        return result

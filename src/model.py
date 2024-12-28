@@ -1,11 +1,12 @@
 import google.generativeai as genai
+from database import Database
 
 
 class LLM:
-    def __init__(self, api_key, database_connection):
+    def __init__(self, api_key: str, database: Database):
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-1.5-flash")
-        self.database_connection = database_connection
+        self.database = database
         self.context = {}
         self.history = []
 
@@ -21,7 +22,7 @@ class LLM:
         if table_name:
             if self.context.get("table") != table_name:
                 # Reset columns and conditions if the table changes
-                self.context = {"table": table_name}
+                self.context["table"] = table_name
                 # reset the history if the table found
                 self.history.clear()
             else:
@@ -71,12 +72,9 @@ class LLM:
             return "The generated SQL query is not valid. Please provide more information to generate a valid SQL query."
 
         # Execute SQL query
-        results = self.execute_sql_query(sql_query)
-        if results is None:
+        response = self.execute_sql_query(sql_query)
+        if response is None:
             return "No results found."
-
-        # Format and return results
-        response = self.format_response(results)
 
         # Clear history after response is given
         self.context.clear()
@@ -87,7 +85,7 @@ class LLM:
     def get_available_tables(self):
         """Retrieve the list of table names from the database."""
         try:
-            result = self.database_connection.execute_query(
+            result = self.database.execute_query(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
             )
             return [table for row in result for table in row]
@@ -118,7 +116,7 @@ class LLM:
     def get_columns_for_table(self, table_name):
         """Retrieve the column names for the specified table."""
         try:
-            result = self.database_connection.execute_query(
+            result = self.database.execute_query(
                 f"""SELECT column_name
                     FROM information_schema.columns
                     WHERE table_schema = 'public'
@@ -234,24 +232,12 @@ class LLM:
     def execute_sql_query(self, sql_query):
         """Execute the SQL query on the database."""
         try:
-            results = self.database_connection.execute_query(sql_query)
+            results = self.database.execute_query(sql_query)
             if results is None:
                 return None
             elif isinstance(results, list):
-                return self.format_response(results)
+                return results
             else:
                 return f"Query executed successfully, {results} rows affected."
         except Exception:
             return None
-
-    def format_response(self, results):
-        """Format the results for display."""
-        if not results:
-            return "No results found."
-
-        # Use LLM to make the results human-readable
-        response = self.model.generate_content(
-            f"Format the following results in a human-readable format:\n{results}"
-        )
-
-        return response.text.strip()

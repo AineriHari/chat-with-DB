@@ -1,11 +1,11 @@
+import sys
 from src.database import Database
 from config import DATABASE_URL, GEMINI_API_KEY
 from src.model import LLM
-import sys
+from src.bot import ChatBot
 from pathlib import Path
 
 BASE_PATH = Path(__file__).resolve().parent
-
 sys.path.append(BASE_PATH)
 
 
@@ -13,13 +13,14 @@ conversation_log = []
 
 
 def main():
+    global conversation_log
+
     # Initialize the database
     db_config = {"dsn": DATABASE_URL}
     db = Database(db_config)
-    db.connect()
 
-    # Initialize the LLM
-    llm = LLM(api_key=GEMINI_API_KEY, database_connection=db)
+    # Initialize the chatbot
+    chat = ChatBot(db_config, GEMINI_API_KEY)
 
     print("Welcome to the Database Chatbot! Type 'exit' to quit.")
 
@@ -28,20 +29,18 @@ def main():
 
         if user_query.lower() == "exit":
             print("Goodbye!")
+            chat.database.close()
             break
 
-        response = llm.process_user_query(user_query)
+        response = chat.process_query(user_query)
 
         # Log the conversation
         conversation_log.append({"user_query": user_query, "bot_response": response})
 
-        # Print the formatted response
-        print("Bot:", response)
-
         # Provide a hint for follow-up queries
-        if "table" in llm.context:
+        if "table" in chat.llm.context:
             print(
-                f"(Hint: You are currently working with the table: {llm.context['table']})"
+                f"(Hint: You are currently working with the table: {chat.llm.context['table']})"
             )
         print()
 
