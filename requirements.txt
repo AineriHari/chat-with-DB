@@ -1,0 +1,5 @@
+Flask==2.0.3
+psycopg2==2.9.1
+requests==2.26.0
+openai==0.11.3
+python-dotenv==0.19.2
