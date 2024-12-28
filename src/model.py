@@ -52,7 +52,7 @@ class LLM:
 
         # Format and return results
         response = self.format_response(results)
-        self.clear_context_partially()  # Retain table context for subsequent queries
+        self.clear_context_partially()
         return response
 
     def get_available_tables(self):
@@ -130,9 +130,13 @@ class LLM:
     def execute_sql_query(self, sql_query):
         """Execute the SQL query on the database."""
         try:
-            cursor = self.database_connection.cursor()
-            cursor.execute(sql_query)
-            return cursor.fetchall()
+            cursor = self.database_connection.execute_query(sql_query)
+            if cursor is None:
+                return None
+            elif isinstance(cursor, list):
+                return cursor
+            else:
+                return f"Query executed successfully, {cursor} rows affected."
         except Exception as e:
             return None
 
