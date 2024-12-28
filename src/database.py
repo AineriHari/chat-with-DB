@@ -11,8 +11,9 @@ class Database:
         import psycopg2
 
         try:
-            self.connection = psycopg2.connect(**self.db_config)
+            connection = psycopg2.connect(**self.db_config)
             print("Database connection established.")
+            return connection
         except Exception as e:
             raise Exception(f"Error connecting to database: {e}")
 

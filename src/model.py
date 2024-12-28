@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from database import Database
+from .database import Database
 
 
 class LLM:
@@ -72,9 +72,12 @@ class LLM:
             return "The generated SQL query is not valid. Please provide more information to generate a valid SQL query."
 
         # Execute SQL query
-        response = self.execute_sql_query(sql_query)
-        if response is None:
+        results = self.execute_sql_query(sql_query)
+        if results is None:
             return "No results found."
+
+        # Format and return results
+        response = self.format_response(results)
 
         # Clear history after response is given
         self.context.clear()
@@ -241,3 +244,12 @@ class LLM:
                 return f"Query executed successfully, {results} rows affected."
         except Exception:
             return None
+
+    def format_response(self, results):
+        """Format the results for display."""
+        # Use LLM to make the results human-readable
+        response = self.model.generate_content(
+            f"Format the following results in a human-readable format:\n{results}"
+        )
+
+        return response.text.strip()

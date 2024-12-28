@@ -1,7 +1,6 @@
 import sys
 from src.database import Database
 from config import DATABASE_URL, GEMINI_API_KEY
-from src.model import LLM
 from src.bot import ChatBot
 from pathlib import Path
 
@@ -17,7 +16,6 @@ def main():
 
     # Initialize the database
     db_config = {"dsn": DATABASE_URL}
-    db = Database(db_config)
 
     # Initialize the chatbot
     chat = ChatBot(db_config, GEMINI_API_KEY)
@@ -36,6 +34,8 @@ def main():
 
         # Log the conversation
         conversation_log.append({"user_query": user_query, "bot_response": response})
+
+        print("Bot:", response)
 
         # Provide a hint for follow-up queries
         if "table" in chat.llm.context:
