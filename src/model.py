@@ -249,7 +249,12 @@ class LLM:
         """Format the results for display."""
         # Use LLM to make the results human-readable
         response = self.model.generate_content(
-            f"Format the following results in a human-readable format:\n{results}"
+            f"Format the following results in a human-readable format:\n{results}",
+            stream=True,
         )
 
-        return response.text.strip()
+        result = ""
+        for chunk in response:
+            result += chunk.text
+            print(chunk.text)
+        return result

@@ -4,16 +4,16 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 class Database:
     def __init__(self, db_config):
         self.db_config = db_config
-        self.connection = self.connect()
+        self.connection = None
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def connect(self):
         import psycopg2
 
         try:
-            connection = psycopg2.connect(**self.db_config)
+            self.connection = psycopg2.connect(**self.db_config)
             print("Database connection established.")
-            return connection
+            return self.connection
         except Exception as e:
             raise Exception(f"Error connecting to database: {e}")
 
