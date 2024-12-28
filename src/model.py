@@ -55,7 +55,6 @@ class LLM:
             # reset the history if the table found
             self.history.clear()
 
-        print("Context:", self.context)
         # Generate SQL query
         sql_query = self.generate_sql_query()
         if sql_query is None:
@@ -211,8 +210,6 @@ class LLM:
         columns_str = ", ".join(columns) if isinstance(columns, list) else columns
         sql_query = f"SELECT {columns_str} FROM {table} WHERE {conditions};"
 
-        print("Generated SQL Query:", sql_query)
-
         # check the sql is valid or not
         response = self.model.generate_content(
             f"""Generated a SQL query based on the following context: 
@@ -227,7 +224,7 @@ class LLM:
             If a valid query cannot be generated, return 'None'. 
             Provide only the valid query or 'None' without any additional explanation."""
         )
-        print("Generated SQL Query Response:", response.text.strip())
+
         return response.text.strip() if response.text.strip() != "None" else None
 
     def is_valid_sql(self, sql_query):

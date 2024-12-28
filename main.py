@@ -43,6 +43,7 @@ def main():
             print(
                 f"(Hint: You are currently working with the table: {llm.context['table']})"
             )
+        print()
 
     # Optionally, print the conversation log when exiting
     print("\nConversation Log:")
