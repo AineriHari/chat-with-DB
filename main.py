@@ -29,6 +29,8 @@ def main():
 
         if user_query.lower() == "exit":
             print("Goodbye!")
+            llm.clear_history_context()
+            llm.user_quieries.clear()
             db.close()
             break
 
@@ -36,7 +38,7 @@ def main():
         if llm.is_format_response:
             llm.format_response(response)
         else:
-            print(f"Bot: {response}")
+            print(f"AI: {response}")
 
         # Log the conversation
         conversation_log.append({"user_query": user_query, "bot_response": response})
@@ -51,7 +53,7 @@ def main():
     # Optionally, print the conversation log when exiting
     print("\nConversation Log:")
     for log in conversation_log:
-        print(f"You: {log['user_query']}\nBot: {log['bot_response']}\n")
+        print(f"You: {log['user_query']}\AI: {log['bot_response']}\n")
 
 
 if __name__ == "__main__":
