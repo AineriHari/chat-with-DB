@@ -7,14 +7,41 @@ class LLM:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-1.5-flash")
         self.database = database
+        self.is_format_response = False
         self.context = {}
         self.history = []
+        self.user_quieries = []
 
     def process_user_query(self, user_query):
         """Main method to handle user query, clarify, and generate response."""
         # Add user query to history to keep track of the conversation
         self.history.append({"type": "user", "value": user_query})
+        self.user_quieries.append(user_query)
 
+        # check the user query is related to the database or not
+        status = self.check_user_query(user_query)
+        if status == "Table_Names":
+            # Get the available tables and return them
+            available_tables = self.get_available_tables()
+            self.is_format_response = True
+            # reset the history and user queries
+            self.clear_history_context()
+            return f"Available tables: {available_tables}"
+        elif status == "Invalid":
+            # reset the history and user queries
+            self.clear_history_context()
+            self.user_quieries.clear()
+            return "I'm sorry, I couldn't generate the response for your query. Please try later. thank you."
+        elif status == "Valid":
+            return self.handle_database_query(user_query)
+        elif status == "Generic":
+            # reset the history and user queries
+            self.clear_history_context()
+            response = self.model.generate_content(user_query).text.strip()
+            self.user_quieries.clear()
+            return response
+
+    def handle_database_query(self, user_query):
         # Step 1: Determine if a new table is mentioned
         available_tables = self.get_available_tables()
         table_name = self.match_table_name(user_query, available_tables)
@@ -60,15 +87,13 @@ class LLM:
         sql_query = self.generate_sql_query()
         if sql_query is None:
             # reset the context and history if the sql query is not valid
-            self.context.clear()
-            self.history.clear()
+            self.clear_history_context()
             return "The SQL query could not be generated. Please start your query with more information."
 
         # Validate the SQL query
         if not self.is_valid_sql(sql_query):
             # reset the context and history if the sql query is not valid
-            self.context.clear()
-            self.history.clear()
+            self.clear_history_context()
             return "The generated SQL query is not valid. Please provide more information to generate a valid SQL query."
 
         # Execute SQL query
@@ -76,14 +101,41 @@ class LLM:
         if results is None:
             return "No results found."
 
-        # Format and return results
-        response = self.format_response(results)
+        # set the flag to format the response
+        self.is_format_response = True
 
         # Clear history after response is given
-        self.context.clear()
-        self.history.clear()  # Clear the conversation history after the response
+        self.clear_history_context()
 
-        return response
+        return results
+
+    def clear_history_context(self):
+        """Clear the context and history."""
+        self.context.clear()
+        self.history.clear()
+
+    def check_user_query(self, user_query):
+        try:
+            response = self.model.generate_content(
+                f"""
+                Analyze the user query: '{user_query}'.
+                Determine the type of the query:
+                - If the query is specifically asking for the list of tables in the database, return 'Table_Names'.
+                - If the query is related to database entries (e.g., retrieving, updating, or managing data), return 'Valid'.
+                - If the query is a generic or general question (not related to the database), return 'Generic'.
+                Do not include any extra explanation or text beyond the requested output.
+                """
+            )
+
+            result = response.text.strip()
+
+            # Return "Valid" or "Table_Names" for database-related queries, otherwise return the generic response
+            if result in ["Valid", "Table_Names"]:
+                return result
+            else:
+                return result  # General response for generic questions
+        except Exception:
+            return "Invalid"
 
     def get_available_tables(self):
         """Retrieve the list of table names from the database."""
@@ -248,13 +300,29 @@ class LLM:
     def format_response(self, results):
         """Format the results for display."""
         # Use LLM to make the results human-readable
+        user_queries = "\n".join(self.user_quieries)
         response = self.model.generate_content(
-            f"Format the following results in a human-readable format:\n{results}",
+            f"""
+            Given the following user query history and corresponding database responses, understand the concise requirement of the user and format the database response into a human-readable format. Ensure the response is relevant, clear, and addresses the user's intent comprehensively.
+
+            User Query History:
+            {user_queries}
+
+            Database Response:
+            {results}
+
+            Format the response appropriately and provide an explanation or summary if needed.
+            """,
             stream=True,
         )
 
         result = ""
+        print("Bot: ", end="")
         for chunk in response:
             result += chunk.text
-            print(chunk.text)
+            print(chunk.text, end="")
+
+        # if user queries are not empty then clear the user queries
+        if self.user_quieries:
+            self.user_quieries.clear()
         return result
