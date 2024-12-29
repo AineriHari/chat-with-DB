@@ -33,6 +33,10 @@ def main():
             break
 
         response = llm.process_user_query(user_query)
+        if llm.is_format_response:
+            llm.format_response(response)
+        else:
+            print(f"Bot: {response}")
 
         # Log the conversation
         conversation_log.append({"user_query": user_query, "bot_response": response})
