@@ -37,9 +37,6 @@ def main():
         # Log the conversation
         conversation_log.append({"user_query": user_query, "bot_response": response})
 
-        # Print the formatted response
-        print("Bot:", response)
-
         # Provide a hint for follow-up queries
         if "table" in llm.context:
             print(
