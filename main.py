@@ -53,7 +53,7 @@ def main():
     # Optionally, print the conversation log when exiting
     print("\nConversation Log:")
     for log in conversation_log:
-        print(f"You: {log['user_query']}\AI: {log['bot_response']}\n")
+        print(f"You: {log['user_query']}\nAI: {log['bot_response']}\n")
 
 
 if __name__ == "__main__":
