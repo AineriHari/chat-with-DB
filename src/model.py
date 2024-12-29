@@ -14,13 +14,10 @@ class LLM:
 
     def process_user_query(self, user_query):
         """Main method to handle user query, clarify, and generate response."""
-        # Add user query to history to keep track of the conversation
-        self.history.append({"type": "user", "value": user_query})
-        self.user_quieries.append(user_query)
-
         # check the user query is related to the database or not
         status = self.check_user_query(user_query)
         if status == "Table_Names":
+            self.user_quieries.append(user_query)
             # Get the available tables and return them
             available_tables = self.get_available_tables()
             self.is_format_response = True
@@ -28,20 +25,19 @@ class LLM:
             self.clear_history_context()
             return f"Available tables: {available_tables}"
         elif status == "Invalid":
-            # reset the history and user queries
-            self.clear_history_context()
-            self.user_quieries.clear()
             return "I'm sorry, I couldn't generate the response for your query. Please try later. thank you."
         elif status == "Valid":
             return self.handle_database_query(user_query)
         elif status == "Generic":
-            # reset the history and user queries
-            self.clear_history_context()
             response = self.model.generate_content(user_query).text.strip()
             self.user_quieries.clear()
             return response
 
     def handle_database_query(self, user_query):
+        # Add user query to history to keep track of the conversation
+        self.history.append({"type": "user", "value": user_query})
+        self.user_quieries.append(user_query)
+
         # Step 1: Determine if a new table is mentioned
         available_tables = self.get_available_tables()
         table_name = self.match_table_name(user_query, available_tables)
@@ -303,7 +299,10 @@ class LLM:
         user_queries = "\n".join(self.user_quieries)
         response = self.model.generate_content(
             f"""
-            Given the following user query history and corresponding database responses, understand the concise requirement of the user and format the database response into a human-readable format. Ensure the response is relevant, clear, and addresses the user's intent comprehensively.
+            Answer the user's query directly and conversationally. 
+            - Be clear, concise, and relevant.
+            - If the user expresses gratitude (e.g., says "thanks"), acknowledge it politely before addressing their question. 
+            - Avoid unnecessary explanations or meta-commentary about how you derived the response.
 
             User Query History:
             {user_queries}
@@ -311,18 +310,14 @@ class LLM:
             Database Response:
             {results}
 
-            Format the response appropriately and provide an explanation or summary if needed.
+            Response:
             """,
             stream=True,
         )
 
         result = ""
-        print("Bot: ", end="")
+        print("AI: ", end="")
         for chunk in response:
             result += chunk.text
             print(chunk.text, end="")
-
-        # if user queries are not empty then clear the user queries
-        if self.user_quieries:
-            self.user_quieries.clear()
         return result
