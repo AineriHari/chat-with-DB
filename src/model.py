@@ -44,14 +44,10 @@ class LLM:
 
         if table_name:
             if self.context.get("table") != table_name:
+                # reset the history if the table found
+                self.clear_history_context()
                 # Reset columns and conditions if the table changes
                 self.context["table"] = table_name
-                # reset the history if the table found
-                self.history.clear()
-            else:
-                self.context["table"] = table_name
-                # reset the history if the table found
-                self.history.clear()
         else:
             # Ask for clarification and pass the history to maintain the conversation flow
             return self.ask_for_clarification("table", available_tables)
@@ -65,8 +61,6 @@ class LLM:
                 return self.ask_for_clarification("columns", available_columns)
 
             self.context["columns"] = columns
-            # reset the history if the table found
-            self.history.clear()
 
         # Step 3: Handle conditions
         if "conditions" not in self.context:
@@ -76,33 +70,32 @@ class LLM:
                 return self.ask_for_clarification("conditions")
 
             self.context["conditions"] = conditions
-            # reset the history if the table found
-            self.history.clear()
 
         # Generate SQL query
         sql_query = self.generate_sql_query()
         if sql_query is None:
             # reset the context and history if the sql query is not valid
             self.clear_history_context()
+            self.user_quieries.clear()
             return "The SQL query could not be generated. Please start your query with more information."
 
         # Validate the SQL query
         if not self.is_valid_sql(sql_query):
             # reset the context and history if the sql query is not valid
             self.clear_history_context()
+            self.user_quieries.clear()
             return "The generated SQL query is not valid. Please provide more information to generate a valid SQL query."
 
         # Execute SQL query
         results = self.execute_sql_query(sql_query)
         if results is None:
+            # reset the context and history if the sql query is not valid
+            self.clear_history_context()
+            self.user_quieries.clear()
             return "No results found."
 
         # set the flag to format the response
         self.is_format_response = True
-
-        # Clear history after response is given
-        self.clear_history_context()
-
         return results
 
     def clear_history_context(self):
