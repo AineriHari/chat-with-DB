@@ -282,12 +282,19 @@ class LLM:
 
     def format_response(self, results):
         """Format the results for display."""
+        get_schema = self.get_columns_for_table(self.context["table"])
         response = self.model.generate_content(
             f"""
-            Update the response to sound more natural and conversational.
+            Based on the response data, dynamically fetch the relevant schema and use it to create a clear and user-friendly explanation. 
+            - Include only the fields from the schema that are present in the response, seamlessly integrating them into a natural explanation.
+            - If the response contains a list of results, present the information with clear descriptions and proper structure without using "|" symbols for tables.
+            - If the response is a single value, provide a concise and natural sentence conveying the information.
+            - Avoid explicitly mentioning any schema fields that are not included in the response.
+            - If the response is an error or message, present it as is without additional formatting.
+            schema: {get_schema if get_schema else "No schema found."}
 
             Response:
-            {results}
+            {results if results else "Not able to generate the response for your query. Please provide more information."}
             """,
             stream=True,
         )
