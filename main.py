@@ -44,6 +44,7 @@ def main():
 
         # Provide a hint for follow-up queries
         if "table" in llm.context:
+            print()
             print(
                 f"(Hint: Hey, I am currently working with the table: {llm.context['table']}). if this is not the table you want to work with, please let me know."
             )
