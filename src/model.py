@@ -10,14 +10,12 @@ class LLM:
         self.is_format_response = False
         self.context = {}
         self.history = []
-        self.user_quieries = []
 
     def process_user_query(self, user_query):
         """Main method to handle user query, clarify, and generate response."""
         # check the user query is related to the database or not
         status = self.check_user_query(user_query)
         if status == "Table_Names":
-            self.user_quieries.append(user_query)
             # Get the available tables and return them
             available_tables = self.get_available_tables()
             self.is_format_response = True
@@ -30,13 +28,11 @@ class LLM:
             return self.handle_database_query(user_query)
         elif status == "Generic":
             response = self.model.generate_content(user_query).text.strip()
-            self.user_quieries.clear()
             return response
 
     def handle_database_query(self, user_query):
         # Add user query to history to keep track of the conversation
         self.history.append({"type": "user", "value": user_query})
-        self.user_quieries.append(user_query)
 
         # Step 1: Determine if a new table is mentioned
         available_tables = self.get_available_tables()
@@ -76,14 +72,12 @@ class LLM:
         if sql_query is None:
             # reset the context and history if the sql query is not valid
             self.clear_history_context()
-            self.user_quieries.clear()
             return "The SQL query could not be generated. Please start your query with more information."
 
         # Validate the SQL query
         if not self.is_valid_sql(sql_query):
             # reset the context and history if the sql query is not valid
             self.clear_history_context()
-            self.user_quieries.clear()
             return "The generated SQL query is not valid. Please provide more information to generate a valid SQL query."
 
         # Execute SQL query
@@ -91,7 +85,6 @@ class LLM:
         if results is None:
             # reset the context and history if the sql query is not valid
             self.clear_history_context()
-            self.user_quieries.clear()
             return "No results found."
 
         # set the flag to format the response
@@ -107,6 +100,7 @@ class LLM:
         try:
             response = self.model.generate_content(
                 f"""
+                context: You are working with a database. Your thinking process should be as follows:
                 Analyze the user query: '{user_query}'.
                 Determine the type of the query:
                 - If the query is specifically asking for the list of tables in the database, return 'Table_Names'.
@@ -288,22 +282,12 @@ class LLM:
 
     def format_response(self, results):
         """Format the results for display."""
-        # Use LLM to make the results human-readable
-        user_queries = "\n".join(self.user_quieries)
         response = self.model.generate_content(
             f"""
-            Answer the user's query directly and conversationally. 
-            - Be clear, concise, and relevant.
-            - If the user expresses gratitude (e.g., says "thanks"), acknowledge it politely before addressing their question. 
-            - Avoid unnecessary explanations or meta-commentary about how you derived the response.
-
-            User Query History:
-            {user_queries}
-
-            Database Response:
-            {results}
+            Update the response to sound more natural and conversational.
 
             Response:
+            {results}
             """,
             stream=True,
         )
