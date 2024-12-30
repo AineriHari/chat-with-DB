@@ -30,7 +30,6 @@ def main():
         if user_query.lower() == "exit":
             print("Goodbye!")
             llm.clear_history_context()
-            llm.user_quieries.clear()
             db.close()
             break
 
