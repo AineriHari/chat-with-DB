@@ -4,7 +4,7 @@ from config import DATABASE_URL, GEMINI_API_KEY
 from src.model import LLM
 from pathlib import Path
 
-BASE_PATH = Path(__file__).resolve().parent
+BASE_PATH = Path(__file__).resolve().parent.parent
 sys.path.append(BASE_PATH)
 
 
@@ -12,6 +12,18 @@ conversation_log = []
 
 
 def main():
+    """
+    Main function to run the Database Chatbot.
+
+    - Initializes the database and LLM instances.
+    - Interacts with the user in a conversational manner.
+    - Handles user queries and provides responses based on the database content.
+    - Logs the conversation and provides hints for follow-up queries.
+    - Allows the user to exit the chatbot gracefully.
+
+    Returns:
+        None
+    """
     global conversation_log
 
     # Initialize the database
