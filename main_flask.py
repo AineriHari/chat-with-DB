@@ -21,7 +21,21 @@ llm = LLM(api_key=GEMINI_API_KEY, database=db)
 
 
 @app.route("/chat", methods=["GET", "POST"])
-def chat():
+def chat() -> jsonify:
+    """
+    Handle chat interactions via the `/chat` endpoint.
+
+    POST:
+        - Receives a user query in JSON format.
+        - Processes the query using the LLM.
+        - Logs the conversation and provides an appropriate response and hint.
+
+    GET:
+        - Returns a 405 error since GET is not allowed for this endpoint.
+
+    Returns:
+        A JSON response containing the bot's reply and an optional hint.
+    """
     global conversation_log
 
     if request.method == "POST":
